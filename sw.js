@@ -1,4 +1,4 @@
-const CACHE = 'minhas-plantas-v1';
+const CACHE = 'minhas-plantas-v2';
 const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {
@@ -15,8 +15,16 @@ self.addEventListener('activate', (e) => {
   self.clients.claim();
 });
 
+// Network-first: sempre tenta buscar a versão mais nova.
+// Só usa a cópia salva (cache) se estiver offline.
 self.addEventListener('fetch', (e) => {
   e.respondWith(
-    caches.match(e.request).then((cached) => cached || fetch(e.request))
+    fetch(e.request)
+      .then((response) => {
+        const copy = response.clone();
+        caches.open(CACHE).then((cache) => cache.put(e.request, copy));
+        return response;
+      })
+      .catch(() => caches.match(e.request))
   );
 });
